@@ -141,7 +141,7 @@ MonoBehaviour:
   startInRandomPosition: 0
   initialPosition: {x: 1.89, y: 0, z: 0}
   forceInitialWaypoint: 1
-  initialWaypoint: 1
+  initialWaypoint: 2
   minDistanceToInitialWaypoint: 0
   specificInitialPoint: {x: -1.94, y: 0, z: 0}
   fishSize: {x: 0.15, y: 0.25}
@@ -150,9 +150,9 @@ MonoBehaviour:
   turnSpeed: {x: 0.5, y: 1}
   fishTriggersNewWaypoint: 0
   minWaypointDistance: 0.85
-  autoWaypointBytime: 0
+  autoWaypointBytime: 1
   randomWaypointTime: {x: 4, y: 8}
-  changeChildWaypoints: 0
+  changeChildWaypoints: 1
   threshold: 0.05
   isFleeEnabled: 1
   fleeMaterial: {fileID: 2100000, guid: 4cd63ac9136ddc3469432ceb60260c5e, type: 2}
@@ -183,7 +183,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 0
   timeToRelax: {x: 1.5, y: 3}
-  isAvoidance: 0
+  isAvoidance: 1
   avoidanceMask:
     serializedVersion: 2
     m_Bits: 4294967295

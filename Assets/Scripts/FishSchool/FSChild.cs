@@ -173,6 +173,14 @@ namespace FishSchool
         private void Avoidance()
         {
 
+            if (!avoidance.isAvoidance) return;
+            Vector3 forward = transform.TransformDirection(Vector3.forward);
+
+            Debug.DrawRay(transform.position, forward, Color.green);
+            RaycastHit hit;
+
+            if (Physics.Raycast(transform.position, forward, out hit, avoidance.avoidDistance, avoidance.avoidanceMask))
+                Debug.DrawRay(transform.position, forward, Color.red);
         }
         #endregion
 
