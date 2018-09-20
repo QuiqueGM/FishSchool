@@ -6,10 +6,10 @@ using UnityEngine;
 namespace FishSchool
 {
     [CanEditMultipleObjects]
-    [CustomEditor(typeof(FishSchoolController))]
-    public class SchoolControllerInspector : Editor
+    [CustomEditor(typeof(FSProperties))]
+    public class FSPropertiesInspector : Editor
     {
-        FishSchoolController fsc;
+        FSProperties fsc;
         SerializedProperty children;
         SerializedProperty newGameObject;
         SerializedProperty bubbles;
@@ -23,7 +23,7 @@ namespace FishSchool
 
         private void OnEnable()
         {
-            fsc = (FishSchoolController)target;
+            fsc = (FSProperties)target;
             children = serializedObject.FindProperty("children");
             newGameObject = serializedObject.FindProperty("newGameObject");
             bubbles = serializedObject.FindProperty("_bubbles");
@@ -37,7 +37,6 @@ namespace FishSchool
             serializedObject.Update();
 
             EditorGUI.BeginChangeCheck();
-
 
             SectionPrefabs();
             SectionGrouping();
@@ -61,7 +60,7 @@ namespace FishSchool
 
             serializedObject.ApplyModifiedProperties();
             fsc.childAmount = EditorGUILayout.IntSlider("Fish Amount", fsc.childAmount, 1, 1000);
-            fsc.fishSize = EditorGUILayout.Vector2Field("Random size", fsc.fishSize);
+            
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(children, true);
             EditorGUI.indentLevel--;
@@ -72,11 +71,11 @@ namespace FishSchool
         {
             Header("Grouping", sectionDone);
             var text = new string[] { "None", "To School", "Existing object", "New object" };
-            fsc.grouping = (FishSchoolController.groupingType)GUILayout.SelectionGrid((int)fsc.grouping, text, 4, EditorStyles.radioButton, GUILayout.MinWidth(1));
+            fsc.grouping = (FSProperties.GroupingType)GUILayout.SelectionGrid((int)fsc.grouping, text, 4, EditorStyles.radioButton, GUILayout.MinWidth(1));
             GUILayout.Space(2);
-            if (fsc.grouping == FishSchoolController.groupingType.Existing)
+            if (fsc.grouping == FSProperties.GroupingType.Existing)
                 EditorGUILayout.PropertyField(newGameObject, new GUIContent("Object to parent"));
-            else if (fsc.grouping == FishSchoolController.groupingType.NewObject)
+            else if (fsc.grouping == FSProperties.GroupingType.NewObject)
                 fsc.groupName = EditorGUILayout.TextField("Group Name", fsc.groupName);
 
             EditorGUILayout.EndVertical();
@@ -90,18 +89,44 @@ namespace FishSchool
             fsc.roamingSize = EditorGUILayout.Vector3Field("Roaming area", fsc.roamingSize);
             fsc.initialPosition = EditorGUILayout.Vector3Field("Start position offset", fsc.initialPosition);
             fsc.forceInitialWaypoint = EditorGUILayout.Toggle("Force initial waypoint", fsc.forceInitialWaypoint);
+            if (fsc.forceInitialWaypoint) InitialPoint();
             EditorGUILayout.EndVertical();
+        }
+
+        private void InitialPoint()
+        {
+            EditorGUILayout.BeginHorizontal();
+            {
+                GUILayout.Space(30);
+                var text = new string[] { "Minimum distance", "Specific", "Randomly" };
+                fsc.initialWaypoint = (FSProperties.InitialWaypointType)GUILayout.SelectionGrid((int)fsc.initialWaypoint, text, 3, EditorStyles.radioButton);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUI.indentLevel = 2;
+            if (fsc.initialWaypoint == FSProperties.InitialWaypointType.ByMinDistance)
+            {
+                EditorGUIUtility.labelWidth = 300;
+                fsc.minDistanceToInitialWaypoint = EditorGUILayout.FloatField("Minimum distance to start position offset", fsc.minDistanceToInitialWaypoint);
+            }
+            else if (fsc.initialWaypoint == FSProperties.InitialWaypointType.Specific)
+            {
+                EditorGUIUtility.labelWidth = 200;
+                fsc.specificInitialPoint = EditorGUILayout.Vector3Field("Specific point", fsc.specificInitialPoint);
+            }
+            EditorGUI.indentLevel = 0;
         }
 
         private void SectionSpeedAndMovement()
         {
-            Header("Speed & Movement", sectionDone);
+            Header("Size & Movement", sectionDone);
             EditorGUIUtility.labelWidth = 200;
-            fsc.fishSchoolSpeedFactor = EditorGUILayout.Vector2Field("Speed Fish School Multiplier", fsc.fishSchoolSpeedFactor);
-            fsc.childSpeedRandom = EditorGUILayout.Vector2Field("Speed Child Multiplier", fsc.childSpeedRandom);
-            fsc.acceleration = EditorGUILayout.Slider("Fish Acceleration", fsc.acceleration, 0.001f, 0.07f);
-            fsc.brake = EditorGUILayout.Slider("Fish Brake Power", fsc.brake, 0.001f, 0.025f);
-            fsc.dampingSpeed = EditorGUILayout.Vector2Field("Fish Turn Speed", fsc.dampingSpeed);
+            fsc.fishSize = EditorGUILayout.Vector2Field("Fish size", fsc.fishSize);
+            fsc.fishSchoolSpeed = EditorGUILayout.Vector2Field("Speed Fish School Multiplier", fsc.fishSchoolSpeed);
+            fsc.childSpeed = EditorGUILayout.Vector2Field("Speed Child Multiplier", fsc.childSpeed);
+            //fsc.acceleration = EditorGUILayout.Slider("Fish Acceleration", fsc.acceleration, 0.001f, 0.07f);
+            //fsc.brake = EditorGUILayout.Slider("Fish Brake Power", fsc.brake, 0.001f, 0.025f);
+            fsc.turnSpeed = EditorGUILayout.Vector2Field("Fish Turn Speed", fsc.turnSpeed);
             EditorGUILayout.EndVertical();
         }
 
@@ -111,40 +136,51 @@ namespace FishSchool
             EditorGUIUtility.labelWidth = 280;
 
             fsc.fishTriggersNewWaypoint = EditorGUILayout.Toggle("Fish Triggers Waypoint", fsc.fishTriggersNewWaypoint);
-
-            if (fsc.fishTriggersNewWaypoint)
-            {
-                EditorGUI.indentLevel = 2;
-                fsc.minWaypointDistance = EditorGUILayout.FloatField("Distance To Waypoint", fsc.minWaypointDistance);
-                EditorGUI.indentLevel = 0;
-            }
-
+            GetFloatField(fsc.fishTriggersNewWaypoint, "Distance to waypoint", ref fsc.minWaypointDistance, true, "(Activating this option might decrease the performance)");
             fsc.autoWaypointBytime = EditorGUILayout.Toggle("Create School Waypoint Randomly by time", fsc.autoWaypointBytime);
-            GetVector2Field(fsc.autoWaypointBytime, ref fsc.randomWaypointTime);
+            GetVector2Field(fsc.autoWaypointBytime, "Time in seconds", ref fsc.randomWaypointTime);
             fsc.changeChildWaypoints = EditorGUILayout.Toggle("Force Fish Waypoints", fsc.changeChildWaypoints);
-            GetVector2Field(fsc.changeChildWaypoints, ref fsc.randomChildDelay);
+            GetFloatField(fsc.changeChildWaypoints, "Threshold", ref fsc.threshold, false, string.Empty);
             EditorGUILayout.EndVertical();
         }
 
-        private void GetVector2Field(bool state, ref Vector2 vector2Field)
+        private void GetFloatField(bool state, string label, ref float floatField, bool showLabel, string message)
         {
             if (state)
             {
                 EditorGUI.indentLevel = 2;
-                vector2Field = EditorGUILayout.Vector2Field("Distance To Waypoint", vector2Field);
+                floatField = EditorGUILayout.FloatField(label, floatField);
+                if (showLabel)
+                    EditorGUILayout.LabelField(message, EditorStyles.miniLabel);
                 EditorGUI.indentLevel = 0;
+                GUILayout.Space(3);
+            }
+        }
+
+        private void GetVector2Field(bool state, string label, ref Vector2 vector2Field)
+        {
+            if (state)
+            {
+                EditorGUI.indentLevel = 2;
+                vector2Field = EditorGUILayout.Vector2Field(label, vector2Field);
+                EditorGUI.indentLevel = 0;
+                GUILayout.Space(3);
             }
         }
 
         private void SectionFlee()
         {
-            Header("Fleeing", sectionDone);
+            Header("Flee", sectionDone);
             EditorGUIUtility.labelWidth = 150;
-            EditorGUILayout.PropertyField(fleeMaterial, new GUIContent("Flee material"));
-            fsc.speedFleeMultiplier = EditorGUILayout.Vector2Field("Flee Speed", fsc.speedFleeMultiplier);
-            fsc.speedTurn = EditorGUILayout.FloatField("Flee Speed", fsc.speedTurn);
-            EditorGUILayout.PropertyField(fleeAcceleration, new GUIContent("Flee Acceleration"));
-            fsc.timeToRelax = EditorGUILayout.Vector2Field("Time to stop fleeing", fsc.timeToRelax);
+            fsc.isFleeEnabled = EditorGUILayout.Toggle("Flee enabled", fsc.isFleeEnabled);
+            if (fsc.isFleeEnabled)
+            {
+                EditorGUILayout.PropertyField(fleeMaterial, new GUIContent("Flee material"));
+                fsc.speedFleeMultiplier = EditorGUILayout.Vector2Field("Flee Speed", fsc.speedFleeMultiplier);
+                fsc.speedTurn = EditorGUILayout.Vector2Field("Turn Speed", fsc.speedTurn);
+                EditorGUILayout.PropertyField(fleeAcceleration, new GUIContent("Flee Acceleration"));
+                fsc.timeToRelax = EditorGUILayout.Vector2Field("Time to stop fleeing", fsc.timeToRelax);
+            }
             EditorGUILayout.EndVertical();
         }
 
@@ -163,7 +199,6 @@ namespace FishSchool
                 fsc.stopSpeedMultiplier = EditorGUILayout.FloatField("Stop Speed Multiplier", fsc.stopSpeedMultiplier);
                 if (fsc.stopDistance <= 0.1) fsc.stopDistance = 0.1f;
             }
-
             EditorGUILayout.EndVertical();
         }
 

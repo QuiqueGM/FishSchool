@@ -10,8 +10,8 @@ namespace FishSchool
 
         private void OnTriggerEnter(Collider other)
         {
-            if(other.GetComponent<SchoolChild>() && avoidance)
-                other.GetComponent<SchoolChild>().Flee(transform.position);
+            if(other.GetComponent<FSChild>() && avoidance)
+                other.GetComponent<FSChild>().Flee(transform.position);
         }
     }
 }
