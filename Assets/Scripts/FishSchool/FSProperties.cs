@@ -14,7 +14,7 @@ namespace FishSchool
         public string groupName = string.Empty;
 
         public GameObject spawner;
-        public Vector3 roamingSize = new Vector3(10, 10, 10);
+        public Vector3 roamingSize = new Vector3(3, 3, 3);
         public Vector3 spawnArea = Vector3.one;
         public bool startInRandomPosition = false;
         public Vector3 initialPosition = Vector3.zero;
@@ -30,6 +30,7 @@ namespace FishSchool
         //public float acceleration = 0.025f;
         //public float brake = 0.01f;
         public Vector2 turnSpeed = new Vector2(0.5f, 1);
+        public AnimationCurve turnAcceleration = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         public bool fishTriggersNewWaypoint;
         public float minWaypointDistance = 0.85f;
@@ -48,10 +49,13 @@ namespace FishSchool
         public AnimationCurve fleeAcceleration = AnimationCurve.EaseInOut(0, 3, 1, 1);
         public Vector2 timeToRelax = new Vector2(1.5f, 3f);
 
-        public bool isAvoidance;             //Enable/disable avoidance
+        public bool isAvoidance;
         public LayerMask avoidanceMask = (LayerMask)(-1);
-        public float avoidAngle = 0.35f;       //Angle of the rays used to avoid obstacles left and right
-        public float avoidDistance = 1.0f;     //How far avoid rays travel
+        public float avoidanceDetection = 1.0f;
+        public float avoidanceStopDistance = 0.5f;
+
+
+        public float avoidAngle = 1;
         public float avoidSpeed = 75.0f;           //How fast this turns around when avoiding	
         public float stopDistance = .5f;       //How close this can be to objects directly in front of it before stopping and backing up. This will also rotate slightly, to avoid "robotic" behaviour
         public float stopSpeedMultiplier = 2.0f;   //How fast to stop when within stopping distance
@@ -81,7 +85,7 @@ namespace FishSchool
         private void DrawRoamingArea()
         {
             Gizmos.color = Color.cyan;
-            Gizmos.DrawWireCube(transform.position, roamingSize * 2 + spawnArea * 2);
+            Gizmos.DrawWireCube(transform.position, roamingSize + spawnArea);
         }
 
         private void DrawSpecificPoint()

@@ -23,14 +23,16 @@ namespace FishSchool
         public Vector2 fishSize;
         public Vector2 childSpeed;
         public Vector2 turnSpeed;
+        public AnimationCurve turnAcceleration;
 
         public Properties() { }
 
-        public Properties(Vector2 fishSize, Vector2 childSpeed, Vector2 turnSpeed)
+        public Properties(Vector2 fishSize, Vector2 childSpeed, Vector2 turnSpeed, AnimationCurve turnAcceleration)
         {
             this.fishSize = fishSize;
             this.childSpeed = childSpeed;
             this.turnSpeed = turnSpeed;
+            this.turnAcceleration = turnAcceleration;
         }
     }
 
@@ -59,23 +61,24 @@ namespace FishSchool
     public class Avoidance
     {
         public bool isAvoidance;
-        public LayerMask avoidanceMask;
+        public LayerMask mask;
+        public float detection;
+        public float distance;
         public float avoidAngle;
-        public float avoidDistance;
         public float avoidSpeed;
-        public float stopDistance;
         public float stopSpeedMultiplier;
 
         public Avoidance() { }
 
-        public Avoidance(bool isAvoidance, LayerMask avoidanceMask, float avoidAngle, float avoidDistance, float avoidSpeed, float stopDistance, float stopSpeedMultiplier)
+        public Avoidance(bool isAvoidance, LayerMask mask, float detection, float stopDistance, float avoidAngle, float avoidSpeed, float stopSpeedMultiplier)
         {
             this.isAvoidance = isAvoidance;
-            this.avoidanceMask = avoidanceMask;
+            this.mask = mask;
+            this.detection = detection;
+            this.distance = stopDistance;
+
             this.avoidAngle = avoidAngle;
-            this.avoidDistance = avoidDistance;
             this.avoidSpeed = avoidSpeed;
-            this.stopDistance = stopDistance;
             this.stopSpeedMultiplier = stopSpeedMultiplier;
         }
     }

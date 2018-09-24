@@ -12,6 +12,7 @@ namespace FishSchool
         private GameObject container;
         private Dictionary<FSChild, Vector3> fish = new Dictionary<FSChild, Vector3>();
         private FSProperties FSP;
+        private Vector3 roamingArea;
 
         private void Awake()
         {
@@ -22,6 +23,7 @@ namespace FishSchool
         {
             CreateSpawner();
             CreateContainer();
+            SetRoamingAreaLimits();
             AddFish();
             SetInitPosition();
             MoveFish(FSP.spawner.transform.position);
@@ -61,6 +63,14 @@ namespace FishSchool
             }
         }
 
+        private void SetRoamingAreaLimits()
+        {
+            roamingArea = new Vector3(
+                (FSP.roamingSize.x + FSP.spawnArea.x) / 2 - FSP.spawnArea.x / 2,
+                (FSP.roamingSize.y + FSP.spawnArea.y) / 2 - FSP.spawnArea.y / 2,
+                (FSP.roamingSize.z + FSP.spawnArea.z) / 2 - FSP.spawnArea.z / 2);
+        }
+
         public void AddFish()
         {
             for (int i = 0; i < FSP.childAmount; i++)
@@ -74,9 +84,9 @@ namespace FishSchool
                 FSChild.Init(
                     this,
                     new Spawner(FSP.spawner, FSP.fishTriggersNewWaypoint, FSP.minWaypointDistance),
-                    new Properties(FSP.fishSize, FSP.childSpeed, FSP.turnSpeed),
+                    new Properties(FSP.fishSize, FSP.childSpeed, FSP.turnSpeed, FSP.turnAcceleration),
                     new Fleeing(FSP.isFleeEnabled, FSP.fleeMaterial, FSP.speedFleeMultiplier, FSP.speedTurn, FSP.fleeAcceleration, FSP.timeToRelax),
-                    new Avoidance(FSP.isAvoidance, FSP.avoidanceMask, FSP.avoidAngle, FSP.avoidDistance, FSP.avoidSpeed, FSP.stopDistance, FSP.stopSpeedMultiplier));
+                    new Avoidance(FSP.isAvoidance, FSP.avoidanceMask, FSP.avoidanceDetection, FSP.avoidanceStopDistance, FSP.avoidAngle, FSP.avoidSpeed, FSP.stopSpeedMultiplier));
 
                 fish.Add(FSChild, TargetPosition());
             }
@@ -88,10 +98,10 @@ namespace FishSchool
         private Vector3 TargetPosition()
         {
             Vector3 waypoint = Vector3.zero;
-            Vector3 scale = FSP.spawner.transform.localScale;
-            waypoint.x = Random.Range(-scale.x / 2, scale.x / 2) + FSP.spawner.transform.position.x;
-            waypoint.y = Random.Range(-scale.y / 2, scale.y / 2) + FSP.spawner.transform.position.y;
-            waypoint.z = Random.Range(-scale.z / 2, scale.z / 2) + FSP.spawner.transform.position.z;
+            
+            waypoint.x = Random.Range(-FSP.spawnArea.x, FSP.spawnArea.x) + FSP.spawner.transform.position.x;
+            waypoint.y = Random.Range(-FSP.spawnArea.y, FSP.spawnArea.y) + FSP.spawner.transform.position.y;
+            waypoint.z = Random.Range(-FSP.spawnArea.z, FSP.spawnArea.z) + FSP.spawner.transform.position.z;
 
             return waypoint;
         }
@@ -147,9 +157,10 @@ namespace FishSchool
         private Vector3 GetRandomPoint()
         {
             Vector3 t = new Vector3();
-            t.x = Random.Range(-FSP.roamingSize.x, FSP.roamingSize.x) + transform.position.x;
-            t.y = Random.Range(-FSP.roamingSize.y, FSP.roamingSize.y) + transform.position.y;
-            t.z = Random.Range(-FSP.roamingSize.z, FSP.roamingSize.z) + transform.position.z;
+
+            t.x = Random.Range(-roamingArea.x, roamingArea.x) + transform.position.x;
+            t.y = Random.Range(-roamingArea.y, roamingArea.y) + transform.position.y;
+            t.z = Random.Range(-roamingArea.z, roamingArea.z) + transform.position.z;
 
             return t;
         }

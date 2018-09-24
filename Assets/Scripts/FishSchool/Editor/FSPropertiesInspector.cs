@@ -14,6 +14,7 @@ namespace FishSchool
         SerializedProperty newGameObject;
         SerializedProperty bubbles;
         SerializedProperty avoidanceMask;
+        SerializedProperty turnAcceleration;
         SerializedProperty fleeMaterial;
         SerializedProperty fleeAcceleration;
         SerializedProperty flee;
@@ -28,6 +29,7 @@ namespace FishSchool
             newGameObject = serializedObject.FindProperty("newGameObject");
             bubbles = serializedObject.FindProperty("_bubbles");
             avoidanceMask = serializedObject.FindProperty("avoidanceMask");
+            turnAcceleration = serializedObject.FindProperty("turnAcceleration");
             fleeMaterial = serializedObject.FindProperty("fleeMaterial");
             fleeAcceleration = serializedObject.FindProperty("fleeAcceleration");
         }
@@ -127,6 +129,7 @@ namespace FishSchool
             //fsc.acceleration = EditorGUILayout.Slider("Fish Acceleration", fsc.acceleration, 0.001f, 0.07f);
             //fsc.brake = EditorGUILayout.Slider("Fish Brake Power", fsc.brake, 0.001f, 0.025f);
             fsc.turnSpeed = EditorGUILayout.Vector2Field("Fish Turn Speed", fsc.turnSpeed);
+            EditorGUILayout.PropertyField(turnAcceleration, new GUIContent("Flee Acceleration"));
             EditorGUILayout.EndVertical();
         }
 
@@ -191,15 +194,27 @@ namespace FishSchool
             if (fsc.isAvoidance)
             {
                 EditorGUILayout.PropertyField(avoidanceMask, new GUIContent("Collider Mask"));
-                fsc.avoidAngle = EditorGUILayout.Slider("Avoid Angle", fsc.avoidAngle, 0.05f, 0.95f);
-                fsc.avoidDistance = EditorGUILayout.FloatField("Avoid Distance", fsc.avoidDistance);
-                if (fsc.avoidDistance <= 0.1) fsc.avoidDistance = 0.1f;
-                fsc.avoidSpeed = EditorGUILayout.FloatField("Avoid Speed", fsc.avoidSpeed);
-                fsc.stopDistance = EditorGUILayout.FloatField("Stop Distance", fsc.stopDistance);
-                fsc.stopSpeedMultiplier = EditorGUILayout.FloatField("Stop Speed Multiplier", fsc.stopSpeedMultiplier);
-                if (fsc.stopDistance <= 0.1) fsc.stopDistance = 0.1f;
+                fsc.avoidanceDetection = EditorGUILayout.FloatField("Detection distance", fsc.avoidanceDetection);
+                fsc.avoidanceStopDistance = EditorGUILayout.FloatField("Stop Distance", fsc.avoidanceStopDistance);
+                CheckAvoidingValues();
+                //fsc.avoidAngle = EditorGUILayout.Slider("Avoid Angle", fsc.avoidAngle, 0, 1);
+                //if (fsc.avoidDistance <= 0.1) fsc.avoidDistance = 0.1f;
+                //fsc.avoidSpeed = EditorGUILayout.FloatField("Avoid Speed", fsc.avoidSpeed);
+                //fsc.stopDistance = EditorGUILayout.FloatField("Stop Distance", fsc.stopDistance);
+                //fsc.stopSpeedMultiplier = EditorGUILayout.FloatField("Stop Speed Multiplier", fsc.stopSpeedMultiplier);
+                //if (fsc.stopDistance <= 0.1) fsc.stopDistance = 0.1f;
             }
             EditorGUILayout.EndVertical();
+        }
+
+        private void CheckAvoidingValues()
+        {
+            if (fsc.avoidanceDetection < fsc.avoidanceStopDistance)
+                fsc.avoidanceDetection = fsc.avoidanceStopDistance;
+            float scale = (fsc.fishSize.x + fsc.fishSize.y) / 2;
+            if (fsc.avoidanceStopDistance < scale)
+                EditorGUILayout.LabelField("This distance will cause objects penetrating into others", EditorStyles.miniLabel);
+            if (fsc.avoidanceStopDistance < 0) fsc.avoidanceStopDistance = 0.05f;
         }
 
         private void SectionPush()

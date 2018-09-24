@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishSchool
@@ -9,6 +10,7 @@ namespace FishSchool
         private Properties properties;
         private float speedValue;
         private float turnValue;
+        private Quaternion currentRotation;
         private bool changeDirection = false;
         private float counterDamping = 0;
 
@@ -22,13 +24,16 @@ namespace FishSchool
         private float counterFlee = 0;
         private float counterTurn = 0;
         private Vector3 forward;
-        private Quaternion currentRotation;
+        private Quaternion fleeRotation;
 
         // Avoidance
         private Avoidance avoidance;
-
-        private Vector3 waypointTarget;
-
+        private bool avoiding = false;
+        private Quaternion avoidRotation;
+        private float avoidTurnSpeed;
+        private float counterAvoidance = 0;
+        private GameObject reference;
+        private RaycastHit hit;
         float _stuckCounter;            //prevents looping around a waypoint
         float _rotateCounterR;          //Used to increase avoidance speed over time
         float _rotateCounterL;
@@ -36,6 +41,8 @@ namespace FishSchool
         bool _scan = true;
         static int _updateNextSeed = 0; //When using frameskip seed will prevent calculations for all fish to be on the same frame
         int _updateSeed = -1;
+
+        private RaycastHit[] raycasList;
 
         public void Init(FSController fsc, Spawner spawner, Properties properties, Fleeing fleeing, Avoidance avoidance)
         {
@@ -47,6 +54,11 @@ namespace FishSchool
 
             SetConstantProperties();
             SetRandomProperites();
+            //reference = new GameObject();
+            reference = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            reference.transform.localScale *= 0.05f;
+            reference.GetComponent<Renderer>().material = null;
+
         }
 
         private void Update()
@@ -55,11 +67,12 @@ namespace FishSchool
             ForwardMovement();
             MoveSpawner();
             Flee();
+            //Avoidance();
         }
 
         private void FixedUpdate()
         {
-            Avoidance();    
+            CheckAvoidance();
         }
 
         private void SetConstantProperties()
@@ -85,6 +98,7 @@ namespace FishSchool
             SetRandomProperites();
             currentRotation = transform.rotation;
             changeDirection = true;
+            counterDamping = 0;
         }
 
         public void ForwardMovement()
@@ -99,7 +113,7 @@ namespace FishSchool
             if (!changeDirection) return;
 
             counterDamping += Time.deltaTime / turnValue;
-            transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.LookRotation(forward, Vector3.up), counterDamping);
+            transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.LookRotation(forward, Vector3.up), properties.turnAcceleration.Evaluate(counterDamping));
 
             if (counterDamping > 1)
             {
@@ -130,13 +144,13 @@ namespace FishSchool
         #region FLEE
         private void Flee()
         {
-            if (!flee || !fleeing.isFleeEnabled) return;
+            if (!flee) return;
 
             counterFlee += Time.deltaTime / fleeingRndTimeToRelaxValue;
             counterTurn += Time.deltaTime / fleeingRndTurnValue;
 
             transform.Translate(Vector3.forward * fleeing.fleeAcceleration.Evaluate(counterFlee) * fleeingRndSpeedValue * Time.deltaTime);
-            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(forward.normalized, Vector3.up), counterTurn);
+            transform.rotation = Quaternion.Lerp(fleeRotation, Quaternion.LookRotation(forward.normalized, Vector3.up), counterTurn);
 
             if (counterFlee > fleeingRndTimeToRelaxValue)
             {
@@ -150,9 +164,12 @@ namespace FishSchool
 
         public void Flee(Vector3 source)
         {
+            if (!fleeing.isFleeEnabled) return;
+
             SetMaterial(fleeing.fleeMaterial);
 
             forward = transform.position - source;
+            fleeRotation = transform.rotation;
             fleeingRndSpeedValue = Random.Range(fleeing.speedFleeMultiplier.x, fleeing.speedFleeMultiplier.y);
             fleeingRndTurnValue = Random.Range(fleeing.speedTurn.x, fleeing.speedTurn.y);
             fleeingRndTimeToRelaxValue = Random.Range(fleeing.timeToRelax.x, fleeing.timeToRelax.y);
@@ -170,22 +187,76 @@ namespace FishSchool
         #endregion
 
         #region AVOIDANCE BACK
+        private void CheckAvoidance()
+        {
+            if (!avoidance.isAvoidance) return;
+
+            Vector3 forward = transform.TransformDirection(Vector3.forward);
+            //avoidTurnSpeed = 0.01f;
+
+            //Debug.DrawRay(transform.position, forward * avoidance.avoidDistance, Color.cyan);
+
+            raycasList = Physics.RaycastAll(transform.position, forward, avoidance.detection, avoidance.mask);
+
+            for (int i = 0; i < raycasList.Length; i++)
+            {
+                RaycastHit hit = raycasList[i];
+            //if (Physics.Raycast(transform.position, forward, out hit, avoidance.avoidDistance, avoidance.avoidanceMask))
+                //Debug.Log(hit.collider.gameObject.name);
+                Debug.DrawRay(transform.position, forward * avoidance.detection, Color.green);
+                Debug.DrawRay(hit.point, hit.normal, Color.magenta);
+
+                //Vector3 reflect = Vector3.Reflect(forward, hit.normal);
+                //Debug.DrawRay(hit.point, reflect, Color.yellow);
+
+                Vector3 right = Vector3.Cross(hit.normal, forward);
+                Debug.DrawRay(hit.point, right, Color.red);
+
+                Vector3 avoidDirection = Vector3.Cross(hit.normal, -right).normalized;
+                Debug.DrawRay(hit.point, avoidDirection, Color.red);
+
+                //Debug.Log(Vector3.Angle(reflect, avoidDirection));
+
+                //Debug.Break();
+                avoidRotation = transform.rotation;
+                //reference.transform.position = avoidDirection * 0.01f + hit.point + hit.normal * 0.5f;
+                reference.transform.position = avoidDirection * 0.01f + hit.point + hit.normal * 0.5f;
+                transform.LookAt(reference.transform, Vector3.up);
+                //Debug.Break();
+                //transform.rotation = Quaternion.LookRotation(avoidDirection * avoidTurnSpeed, Vector3.up);// Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(avoidDirection, Vector3.up), counterAvoidance);
+                //Time.timeScale = 0.01f;
+
+                //avoiding = true;
+            }
+            //else
+            //    avoiding = false;
+        }
+
         private void Avoidance()
         {
+            if (!avoiding) return;
 
-            if (!avoidance.isAvoidance) return;
-            Vector3 forward = transform.TransformDirection(Vector3.forward);
+            counterAvoidance += Time.deltaTime / avoidTurnSpeed;
 
-            Debug.DrawRay(transform.position, forward, Color.green);
-            RaycastHit hit;
+            transform.rotation = Quaternion.Lerp(avoidRotation, Quaternion.LookRotation(forward.normalized, Vector3.up), counterAvoidance);
 
-            if (Physics.Raycast(transform.position, forward, out hit, avoidance.avoidDistance, avoidance.avoidanceMask))
-                Debug.DrawRay(transform.position, forward, Color.red);
+            if (counterAvoidance >= 1)
+                counterAvoidance = 0;
+            //if (counterFlee > fleeingRndTimeToRelaxValue)
+            //{
+            //    flee = false;
+            //    counterFlee = 0;
+            //    counterTurn = 0;
+            //    SetMaterial(material);
+            //    fsc.AddFish(this);
+            //}
+
+
         }
         #endregion
 
         #region PUSH BACK
-     
+
         #endregion
     }
 }
